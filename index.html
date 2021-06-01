@@ -1,7 +1,17 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <script src="https://code.jquery.com/jquery-2.2.4.js" integrity="sha256-iT6Q9iMJYuQiMWNd9lDyBUStIq/8PuOW33aOqmvFpqI=" crossorigin="anonymous"></script>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+      integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+      crossorigin=""
+    />
+    <script
+      src="https://code.jquery.com/jquery-2.2.4.js"
+      integrity="sha256-iT6Q9iMJYuQiMWNd9lDyBUStIq/8PuOW33aOqmvFpqI="
+      crossorigin="anonymous"
+    ></script>
     <script src="https://ctd.cybervisiondemo.com/admin/assets/js/angular.min.js"></script>
     <script src="https://code.highcharts.com/maps/highmaps.js"></script>
     <script src="https://code.highcharts.com/maps/modules/exporting.js"></script>
@@ -9,347 +19,178 @@
     <script src="leaflet.markercluster-src.js"></script>
     <script src="https://ctd.cybervisiondemo.com/portal/components/stockMap/pakistan_districts.js"></script>
     <script src="stockDataMapSample.js"></script>
-    <link href="leflet_style.css" rel="stylesheet" type="text/css"/>
-    <style type="text/css">
-      div#map {
-          width: 50%;
-          height: 650px;
-          position: relative;
-          outline: none;
-          border: 2px solid black; 
-          overflow: hidden;
-      }
-    </style>
+
+    <link href="leflet_style.css" rel="stylesheet" type="text/css" />
   </head>
-<body>
+  <body>
+    <div id="map"></div>
 
- <div id="map"></div>
+    <script type="text/javascript">
+      jQuery(document).ready(function () {
+        var DISstatesData = DISstates;
 
+        function GetMap(data) {
+          console.log(" GetMap ", DISstatesData);
 
-
-
-
-<script type="text/javascript">
-jQuery(document).ready(function(){
-
-var DISstatesData = DISstates;
-
- function GetMap(data) {
-    console.log(' GetMap ', DISstatesData); 
-    var stateFinal = [];
-    angular.forEach(DISstatesData.features, function (obj1) {
-        var priceType = 'noData';
-        var district = '';
-        var rvalue = 0;
-        angular.forEach(obj1.properties, function (obj2, key) {
-            angular.forEach(data, function (recIND) {
+          var stateFinal = [];
+          angular.forEach(DISstatesData.features, function (obj1) {
+            var priceType = "noData";
+            var district = "";
+            var rvalue = 0;
+            angular.forEach(obj1.properties, function (obj2, key) {
+              angular.forEach(data, function (recIND) {
                 // if ((recIND.district).toUpperCase() == (dis).toUpperCase()) {
                 // console.log(obj2);
-                if ((recIND.district) == (obj2)) {
-                    priceType = recIND.priceType;
-                    district = recIND.district;
-                    rvalue = recIND.value;
+                if (recIND.district == obj2) {
+                  priceType = recIND.priceType;
+                  district = recIND.district;
+                  rvalue = recIND.value;
                 }
+              });
 
+              if (key == "Districts") district = obj2;
             });
+            obj1.properties.priceType = priceType;
+            obj1.properties.name = district;
+            obj1.properties.density = rvalue;
+            // console.log(obj1.properties);
+          });
+          stateFinal = DISstatesData;
 
-            if (key == 'Districts')   district = obj2;
-        });
-        obj1.properties.priceType = priceType;
-        obj1.properties.name = district;
-        obj1.properties.density = rvalue;
-        // console.log(obj1.properties);
-    });
-    stateFinal = DISstatesData;
+          var markers = "";
+          var map = "";
+          $("#map").html("");
+          //&language=ar&region=EG
+          //map.addControl(new L.Control.Fullscreen());
+          if (map != "") {
+            map.removeLayer(markers);
+          }
+          var container = L.DomUtil.get("map");
+          if (container != null) {
+            container._leaflet_id = null;
+          }
 
-    var markers = '';
-    var map = '';
-    $("#map").html("");
-    //&language=ar&region=EG
-    //map.addControl(new L.Control.Fullscreen());
-    if (map != '') {
-        //  markers.removeLayer(markers);
-        map.removeLayer(markers);
-        // map.addLayer(markers);
+          //  var map = L.map('map').setView([33.621705, 72.943680], 5);
+          map = L.map("map", {
+            center: [30.375321, 69.3451],
+            zoom: 5,
+          });
 
-        //map.off();
-        //map.remove();
-        // map.invalidateSize();
-        //document.getElementById('mapLayer').innerHTML = "";
-        //loadmap();
-    }
-    var container = L.DomUtil.get('map');
-    if (container != null) {
-        container._leaflet_id = null;
-    }
+          //Add WMS Layer here
+          console.log("here");
+          map.createPane("wmspane");
+          map.getPane("wmspane").style.zIndex = 650;
 
-    //  var map = L.map('map').setView([33.621705, 72.943680], 5);
-    map = L.map('map', {
-        center: [30.375321, 69.3451],
-        zoom: 5,
-        //zoomControl: false,
-        //reuseTiles: true,
-        //unloadInvisibleTiles: true
-    });
+          const tileLayerConst = L.tileLayer.wms(
+            "http://139.59.126.111:8080/geoserver/QGIS_Proj/ows?",
+            {
+              layers: "QGIS_Proj:BdryGrp",
+              transparent: true,
+              format: "image/png",
+              pane: "wmspane",
+              tileSize: 1000,
+            }
+          );
+          map.addLayer(tileLayerConst);
 
-    //map.touchZoom.disable();
-    //map.doubleClickZoom.disable();
-    //map.scrollWheelZoom.disable();
-    //map.boxZoom.disable();
-    //map.keyboard.disable();
-    //$(".leaflet-control-zoom").css("visibility", "hidden");
+          // control that shows state info on hover
+          var info = L.control();
+          info.onAdd = function (map) {
+            this._div = L.DomUtil.create("div", "info");
+            this.update();
+            return this._div;
+          };
+          info.update = function (props) {
+            this._div.innerHTML =
+              "<h4>" +
+              (props
+                ? "<b>" +
+                  props.name +
+                  "</b>= " +
+                  props.density +
+                  " pkr <span> / </span>" +
+                  props.priceType
+                : "Hover over a district" + "</h4>");
 
-    L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
-        // L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
-        //attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' + '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +'Imagery � <a href="https://www.mapbox.com/">Mapbox</a>',
-        id: 'mapbox/light-v9',
-        tileSize: 210,
-        zoomOffset: -1
-    }).addTo(map);
+            ///  this._div.innerHTML = '<h4>   ' + $scope.FPMATitle + '- Price </h4>' + (props ?'<b>' + props.name + '</b>= ' + props.density + ' pkr <span> / </span>' + props.priceType                    : 'Hover over a district');
+          };
+          info.addTo(map);
 
+          // get color depending on population density value
+          function getColor(d) {
+            return d == "Increase"
+              ? "#FF0000"
+              : d == "Decrease"
+              ? "#008000"
+              : d == "stable"
+              ? "#ECED59"
+              : "#fbfbfb";
+          }
 
-    // control that shows state info on hover
-    var info = L.control();
-    info.onAdd = function (map) {
-        this._div = L.DomUtil.create('div', 'info');
-        this.update();
-        return this._div;
-    };
-    info.update = function (props) {
-        this._div.innerHTML = '<h4>' + (props ?
-            '<b>' + props.name + '</b>= ' + props.density + ' pkr <span> / </span>' + props.priceType
-                : 'Hover over a district' + '</h4>');
+          function style(feature) {
+            return {
+              weight: 2,
+              opacity: 1,
+              color: "white",
+              //   dashArray: "3",
+              fillOpacity: 0.7,
+              fillColor: getColor(feature.properties.priceType),
+            };
+          }
 
-        ///  this._div.innerHTML = '<h4>   ' + $scope.FPMATitle + '- Price </h4>' + (props ?'<b>' + props.name + '</b>= ' + props.density + ' pkr <span> / </span>' + props.priceType                    : 'Hover over a district');
-    };
-    info.addTo(map);
-
-    // get color depending on population density value
-    function getColor(d) {
-        return d == 'Increase' ? '#FF0000' :
-            d == 'Decrease' ? '#008000' :
-                d == 'stable' ? '#ECED59' :
-                    '#fbfbfb';
-    }
-
-    function style(feature) {
-        return {
+          var defaultStyle = {
+            color: "#2262CC",
             weight: 2,
-            opacity: 1,
-            color: 'white',
-            dashArray: '3',
-            fillOpacity: 0.7,
-            fillColor: getColor(feature.properties.priceType)
-        };
-    }
+            opacity: 0.6,
+            fillOpacity: 0.1,
+            fillColor: "#2262CC",
+          };
 
-    var defaultStyle = {
-        color: "#2262CC",
-        weight: 2,
-        opacity: 0.6,
-        fillOpacity: 0.1,
-        fillColor: "#2262CC"
-    };
-
-    function highlightFeature(e) {
-        var layer = e.target;
-        layer.setStyle({
-            weight: 5,
-            color: '#666',
-            dashArray: '',
-            fillOpacity: 0.7
-        });
-        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-            layer.bringToFront();
-        }
-
-        //var popup = $("<div></div>", {
-        //    id: "popup-" + layer.feature.properties.name,
-        //});
-        //// Insert a headline into that popup
-        //var hed = $("<div></div>", {
-        //    text: "District " + layer.feature.properties.name + ": " + layer.feature.properties.density + "/ " + layer.feature.properties.priceType,
-        //    css: {fontSize: "16px", marginBottom: "3px"}
-        //}).appendTo(popup);
-        //// Add the popup to the map
-
-        //var popup = $("<div><div style='text-align:center'>  <span class='dots' style='background: #FF0000 '></span> Increase<span class='dots' style='background: #008000'></span> Decrease <span class='dots' style='background: #ECED59'></span> Stable <span class='dots' style='background:#fbfbfb '></span> Not Available</div></div>");
-        //
-        //popup.appendTo("#map");
-
-        // var marker = L.marker(layer.feature.geometry.coordinates)//.addTo("#map")
-        //    .bindPopup(popup, {closeButton: false, offset: L.point(0, -20)});
-        //marker.on('mouseover', function () {
-        //    marker.openPopup()
-        //})
-
-        // var popups = "" + layer.feature.properties.name + "";
-        // layer.bindPopup(popups);
-
-
-        info.update(layer.feature.properties);
-    }
-
-    var geojson;
-
-    function resetHighlight(e) {
-
-        // return;
-        geojson.resetStyle(e.target);
-        info.update();
-    }
-
-    function zoomToFeature(e) {
-        map.fitBounds(e.target.getBounds());
-    }
-
-    function onEachFeature(feature, layer) {
-        layer.on({
-            mouseover: highlightFeature,
-            mouseout: resetHighlight,
-            //  click: zoomToFeature
-        });
-    }
-
-    geojson = L.geoJson(stateFinal, {
-        style: style,
-        onEachFeature: onEachFeature
-    }).addTo(map);
-
-
-    // map.attributionControl.addAttribution('Population data &copy; <a href="http://census.gov/">Pak State Bureau</a>');
-    var legend = L.control({position: 'bottomright'});
-    legend.onAdd = function (map) {
-
-        var div = L.DomUtil.create('div', 'info legend'),
-            grades = [0, 10, 20, 50, 100, 200, 500, 1000],
-            labels = [],
-            from, to;
-        for (var i = 0; i < grades.length; i++) {
-            from = grades[i];
-            to = grades[i + 1];
-
-            labels.push(
-                '<i style="background:' + getColor(from + 1) + '"></i> ' +
-                from + (to ? '&ndash;' + to : '+'));
-        }
-
-        div.innerHTML = labels.join('<br>');
-        return div;
-    };
-    // legend.addTo(map);
-    return;
-//only markerks map
-
-    var markers = '';
-    var map = '';
-
-    $("#map").html("");
-    //&language=ar&region=EG
-
-    var mapformat = 'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png';
-    //https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}
-    //https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png
-    var tiles = L.tileLayer(mapformat, {
-        //    //   maxZoom: 7,
-        //    //  minZoom:5,
-        //    // mapTypeId: google.maps.MapTypeId.ROADMAP,
-        //    //  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }), latlng = L.latLng(33.621705, 72.943680);
-
-    if (map != '') {
-
-        markers.removeLayer(markers);
-        map.removeLayer(markers);
-        map.addLayer(markers);
-
-        //map.off();
-        // map.remove();
-        // map.invalidateSize();
-        //document.getElementById('mapLayer').innerHTML = "";
-        //loadmap();
-    }
-
-    var container = L.DomUtil.get('map');
-    if (container != null) {
-        container._leaflet_id = null;
-    }
-
-    var map = L.map('map', {center: latlng, zoom: 5, maxZoom: 10, layers: tiles});//.setView([33.621705, 72.943680], 10);
-    var markers = L.markerClusterGroup({
-        spiderfyOnMaxZoom: true,
-        showCoverageOnHover: false,
-        zoomToBoundsOnClick: true,
-    });
-
-    var addressPoints = [];
-    $.each(data, function (key, value) {
-        //  val1 = val1.substr(1,val1.length -2);//replace("\"", "");//map(Number);
-        addressPoints.push([value.Province, value.District, value.market
-            , value.price_type, value.commodity, value.currency, value.Measurement, value.Frequency,
-            value.price, value.recorddate, value.lat, value.lng, value.priceType]);
-
-    });
-    for (var i = 0; i < addressPoints.length; i++) {
-        var markersdata = addressPoints[i];
-        if (markersdata[10] != '' && markersdata[11] != '') {
-            //<img src=" + markersdata[0] + " height='200' width='300' /> " +
-            var popup = "<br/>" + "<b>Province:&nbsp;</b>" + markersdata[0] + "<br/>"
-                + "<b>District:&nbsp;</b>" + markersdata[1] + "<br/>" + "<b>Market&nbsp;</b>" + markersdata[2]
-                + "<br/>" + "<b>Price Type:&nbsp;</b>" + markersdata[3] + "<br/>"
-                + "<b>Commodity:&nbsp;</b>" + markersdata[4] + "<br/>" + "<b>Currency:&nbsp;</b>" + markersdata[5] + "<br/>" +
-                "<b>Measurement/Unit:&nbsp;</b>" + markersdata[6] + "<br/>"
-                + "<b>Frequency:&nbsp;</b>" + markersdata[7] + "<br/>" + "<b>Date Time:&nbsp;</b>" + markersdata[9] + "<br/>"
-                + "<b>Price:&nbsp;</b>" + markersdata[8] + "<br/>";
-
-            var isrc = 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png';
-
-            if (markersdata[12] == 'Increase')
-                isrc = "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png"
-            else if (markersdata[12] == 'Decrease')
-                isrc = "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png"
-            else if (markersdata[12] == 'stable')
-                isrc = "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png"
-            else if (markersdata[12] == 'noData')
-                isrc = "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-black.png"
-            var myIcon = L.icon({
-                iconUrl: isrc,
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                // iconUrl: 'http://fao.cybervisiondemo.com/admin/assets/js/marker-icon.png',
-                iconSize: [38, 95],
-                iconAnchor: [22, 94],
-                popupAnchor: [-3, -76],
-                shadowSize: [68, 95],
-                shadowAnchor: [22, 94]
+          function highlightFeature(e) {
+            var layer = e.target;
+            layer.setStyle({
+              weight: 5,
+              color: "#666",
+              dashArray: "",
+              fillOpacity: 0.7,
             });
-            // L.marker(new L.LatLng(markersdata[10], markersdata[11], {icon: myIcon}))//
-            var marker = L.marker([markersdata[10], markersdata[11]], {icon: myIcon})
-                .bindPopup(popup, {closeButton: false, offset: L.point(0, -20)});
-            marker.on('mouseover', function () {
-                marker.openPopup();
-            })
-            marker.on('mouseout', function () {
-                marker.closePopup();
-            })
-            markers.addLayer(marker);
+            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+              layer.bringToFront();
+            }
 
+            info.update(layer.feature.properties);
+          }
+
+          var geojson;
+
+          function resetHighlight(e) {
+            // return;
+            geojson.resetStyle(e.target);
+            info.update();
+          }
+
+          function zoomToFeature(e) {
+            map.fitBounds(e.target.getBounds());
+          }
+
+          function onEachFeature(feature, layer) {
+            layer.on({
+              mouseover: highlightFeature,
+              mouseout: resetHighlight,
+              //  click: zoomToFeature
+            });
+          }
+
+          geojson = L.geoJson(stateFinal, {
+            style: style,
+            onEachFeature: onEachFeature,
+          }).addTo(map);
+
+          map.addLayer(markers);
         }
-    }
-    map.addLayer(markers);
-}
- 
 
- GetMap(stockMapJsonData);
-
-});
-</script>
-
-</body>
+        GetMap(stockMapJsonData);
+      });
+    </script>
+  </body>
 </html>
-
-
-
-
-
-
-
